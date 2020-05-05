@@ -114,7 +114,7 @@ create(PaymentId, Context) ->
                         <<"AmountCredit">> => abs(Amount)
                     }
             end,
-            InvoiceNr = invoice_nr(proplists:get_value(id, Payment), Context),
+            InvoiceNr = invoice_nr(Payment, Context),
             Args1 = Args#{
                 <<"Currency">> => Currency,
                 <<"Description">> => valid_description( proplists:get_value(description, Payment) ),
@@ -262,18 +262,32 @@ add_user_agent(Args, Context) ->
             }
     end.
 
-%% @doc Format the invoice number
--spec invoice_nr( non_neg_integer(), z:context() ) -> binary().
-invoice_nr(Nr, Context) ->
-    Prefix = m_config:get_value(mod_payment_buckaroo, invoice_nr_prefix, <<"INV">>, Context),
-    iolist_to_binary([
-        Prefix,
-        io_lib:format("~4..0B", [ (Nr div 100000000) rem 10000 ]),
-        ".",
-        io_lib:format("~4..0B", [ (Nr div 10000) rem 10000 ]),
-        ".",
-        io_lib:format("~4..0B", [ Nr rem 10000 ])
-    ]).
+%% @doc Return the invoice number for this payment.
+-spec invoice_nr( proplists:proplist(), z:context() ) -> binary().
+invoice_nr(Payment, Context) ->
+    InvNr = case proplists:get_value(props, Payment) of
+        Props when is_list(Props) ->
+            proplists:get_value(invoice_nr, Props);
+        Props when is_map(Props) ->
+            maps:get(invoice_nr, Props, undefined);
+        _ ->
+            undefined
+    end,
+    case z_utils:is_empty(InvNr) of
+        true ->
+            PaymentId = proplists:get_value(id, Payment),
+            Prefix = m_config:get_value(mod_payment_buckaroo, invoice_nr_prefix, <<"INV">>, Context),
+            iolist_to_binary([
+                Prefix,
+                io_lib:format("~4..0B", [ (PaymentId div 100000000) rem 10000 ]),
+                ".",
+                io_lib:format("~4..0B", [ (PaymentId div 10000) rem 10000 ]),
+                ".",
+                io_lib:format("~4..0B", [ PaymentId rem 10000 ])
+            ]);
+        false ->
+            z_convert:to_binary(InvNr)
+    end.
 
 
 %% @doc Return the url for the callbacks from Buckaroo.
