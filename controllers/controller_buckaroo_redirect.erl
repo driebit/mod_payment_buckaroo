@@ -89,6 +89,7 @@ moved_temporarily(ReqData, Context) ->
             Timestamp = z_context:get_q("brq_timestamp", Context1),
             PspId = z_context:get_q("brq_transactions", Context1),
             set_status(PspId, StatusCode, Timestamp, Context1),
+            lager:info("Buckaroo controller found PAYMENT STATUS ~p", [ StatusCode ]),
             case StatusCode of
                 190 ->
                     % Payment done
@@ -102,6 +103,15 @@ moved_temporarily(ReqData, Context) ->
                 793 ->
                     % Hold (waiting for funds)
                     redirect(payment_psp_done, Context1);
+                490 ->
+                    % Failed (Mislukt)
+                    redirect(payment_psp_done, Context1);
+                690 ->
+                    % Failed (afgewezen)
+                    redirect(payment_psp_done, Context1);
+                890 ->
+                    % Canceled by customer
+                    redirect(payment_psp_cancel, Context1);
                 _ ->
                     % Probably canceled
                     redirect(payment_psp_cancel, Context1)
@@ -143,7 +153,14 @@ is_signature_ok(Context) ->
     SigString = sig_string(Args1),
     OurSig = z_convert:to_binary(sig(SigString, Context)),
     SigQ = q_sig(Args),
-    OurSig =:= SigQ.
+    case OurSig of
+        SigQ ->
+            true;
+        _Other ->
+            lager:error("Buckaroo controller failed signature ~p (expected ~p) on ~p",
+                        [ OurSig, SigQ, Args1 ]),
+            false
+    end.
 
 is_brq_sign_arg({<<"brq_signature">>, _, _}) -> false;
 is_brq_sign_arg({<<"brq_", _/binary>>, _, _}) -> true;

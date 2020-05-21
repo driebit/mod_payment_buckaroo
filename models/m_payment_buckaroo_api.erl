@@ -496,13 +496,21 @@ is_valid_authorization_header(Body, Context) ->
                             case calc_sig(WebSiteKey, SecretKey, Method,
                                           Url, Body, Nonce, Timestamp)
                             of
-                                Sig -> true;
-                                _ -> false
+                                Sig ->
+                                    true;
+                                Expected ->
+                                    lager:error("Buckaroo Sig mismatch expected ~p, got ~p",
+                                                [ Expected, Sig ]),
+                                    false
                             end;
                         _ ->
+                            lager:error("Buckaroo key pattern mismatch: ~p",
+                                        [ Hash ]),
                             false
                     end;
                 _ ->
+                    lager:error("Buckaroo authorization header mismatch: ~p",
+                                [ Hdr ]),
                     false
             end;
         {error, _} ->
