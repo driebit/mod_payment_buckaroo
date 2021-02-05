@@ -1,8 +1,8 @@
 %% @author Marc Worrell <marc@worrell.nl>
-%% @copyright 2020 Driebit BV
+%% @copyright 2020-2021 Driebit BV
 %% @doc Payment PSP module for Buckaroo
 
-%% Copyright 2020 Driebit BV
+%% Copyright 2020-2021 Driebit BV
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@
     init/1,
 
     observe_payment_psp_request/2,
-    observe_payment_psp_view_url/2
+    observe_payment_psp_view_url/2,
+    observe_payment_psp_status_sync/2
     % observe_cancel_subscription_psp_request/2
 ]).
-
 
 -include_lib("mod_payment/include/payment.hrl").
 
@@ -65,6 +65,25 @@ observe_payment_psp_request(#payment_psp_request{}, _Context) ->
 observe_payment_psp_view_url(#payment_psp_view_url{ psp_module = ?MODULE, psp_external_id = BuckarooId }, _Context) ->
     {ok, m_payment_buckaroo_api:payment_url(BuckarooId)};
 observe_payment_psp_view_url(#payment_psp_view_url{}, _Context) ->
+    undefined.
+
+
+observe_payment_psp_status_sync(#payment_psp_status_sync{
+        payment_id = PaymentId,
+        psp_module = ?MODULE,
+        psp_external_id = BuckarooId
+    }, Context) ->
+    case m_payment_buckaroo_api:transaction_status(BuckarooId, Context) of
+        {ok, {Code, DT}} ->
+            m_payment_buckaroo_api:update_payment_status(PaymentId, Code, DT, Context),
+            ok;
+        {error, 404} = Error ->
+            lager:warning("[buckaroo] unknown payment id ~p", [ PaymentId ]),
+            Error;
+        {error, _} = Error ->
+            Error
+    end;
+observe_payment_psp_status_sync(#payment_psp_status_sync{}, _Context) ->
     undefined.
 
 % observe_cancel_subscription_psp_request(#cancel_subscription_psp_request{ user_id = UserId }, Context) ->

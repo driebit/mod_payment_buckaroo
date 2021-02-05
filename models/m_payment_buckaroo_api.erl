@@ -20,6 +20,7 @@
 -export([
     create/2,
     webhook_data/2,
+    transaction_status/2,
 
     is_test/1,
     api_key/1,
@@ -227,6 +228,26 @@ valid_description(undefined) -> <<"Payment">>;
 valid_description(D) when is_binary(D) -> D.
 
 
+%% @doc Return the status of the transaction.
+-spec transaction_status( binary() | string(), z:context() ) -> {ok, {atom(), calendar:datetime()}} | {error, term()}.
+transaction_status(Key, Context) ->
+    case api_call(get, "json/Transaction/Status/" ++ z_convert:to_list(Key), <<>>, undefined, Context) of
+        {ok, #{
+            <<"Status">> := #{
+                <<"Code">> := #{
+                    <<"Code">> := StatusCode,
+                    <<"Description">> := _StatusDescription
+                },
+                <<"DateTime">> := DT % <<"2020-07-16T20:00:18+02:00">>
+            }
+        }} ->
+            % https://support.buckaroo.nl/categorieën/transacties/status
+            {ok, {StatusCode, z_datetime:to_datetime(DT)}};
+        {error, _} = Error ->
+            Error
+    end.
+
+
 %% @doc Add the peer IP address to the request, used for fraud detection
 add_peer(Args, Context) ->
     case m_req:get(peer, Context) of
@@ -255,7 +276,7 @@ add_peer(Args, Context) ->
 %% @doc Add the user-agent to the request, used for fraud detection
 add_user_agent(Args, Context) ->
     case m_req:get(user_agent, Context) of
-        undefind -> Args;
+        undefined -> Args;
         UA ->
             Args#{
                 <<"ClientUserAgent">> => z_convert:to_binary(UA)
@@ -429,7 +450,7 @@ api_call(Method, Endpoint, Args, Language, Context) ->
                 _ ->
                     {Url, Hs, "application/json", Body}
             end,
-            lager:info("Making API call to Buckaroo: ~p~n", [Request]),
+            lager:debug("Making API call to Buckaroo: ~p~n", [Request]),
             case httpc:request(
                 Method, Request,
                 [
@@ -543,7 +564,10 @@ calc_sig(WebSiteKey, SecretKey, Method, Url, Body, Nonce, Timestamp) ->
         auth_uri(Url),
         z_convert:to_binary(Timestamp),
         Nonce,
-        BodyHash
+        case Method of
+            get -> <<>>;
+            _ -> BodyHash
+        end
     ],
     Sig = crypto:hmac(sha256, SecretKey, SigData),
     base64:encode(Sig).
