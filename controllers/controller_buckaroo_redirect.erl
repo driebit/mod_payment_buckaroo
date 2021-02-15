@@ -119,7 +119,7 @@ moved_temporarily(ReqData, Context) ->
     end.
 
 set_status(PspId, StatusCode, Timestamp, Context) ->
-    DateTime = z_datetime:to_datetime(Timestamp),
+    DateTime = z_datetime:to_datetime(Timestamp, <<"Europe/Berlin">>),
     case m_payment:get_by_psp(mod_payment_buckaroo, PspId, Context) of
         {ok, Payment} ->
             Id = proplists:get_value(id, Payment),
