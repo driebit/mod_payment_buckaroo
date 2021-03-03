@@ -26,6 +26,17 @@ The following configuration keys can be set:
    number. It is prefixed with this config key, which defaults to `"INV"`. The payment-id
    is formatted as: `"INV0000.0000.0012"`
 
+ * `mod_payment_buckaroo.services_excluded` the services excluded from the payment form.
+   A comma separated list of service codes, see https://dev.buckaroo.nl/PaymentMethods 
+   Example: `paypal,Alipay`
+   Leave empty to allow all services.
+
+ * `mod_payment_buckaroo.services_selectable` the services selectable from the payment form.
+   A comma separated list of service codes, see https://dev.buckaroo.nl/PaymentMethods 
+   The order of this list is also the order on the payment form.
+   Example: `ideal,paypal`
+   Leave empty to allow all services in their default order.
+
 
 Webhook and Redirect URLs
 -------------------------

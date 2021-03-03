@@ -82,7 +82,9 @@ api_test(Context) ->
         <<"Services">> => #{
             <<"ServiceList">> => [
             ]
-        }
+        },
+        <<"ServicesSelectableByClient">> => <<>>,
+        <<"ServicesExcludedForClient">> => <<>>
     },
     api_call(post, "json/Transaction", Args, en, Context).
 
@@ -104,7 +106,6 @@ create(PaymentId, Context) ->
                 Context),
             WebhookUrl = webhook_url(proplists:get_value(payment_nr, Payment), Context),
             Amount = proplists:get_value(amount, Payment),
-            % AmountS = z_convert:to_binary(io_lib:format("~.2f", [ abs(Amount) ])),
             Args = case Amount >= 0 of
                 true ->
                     #{
@@ -116,6 +117,8 @@ create(PaymentId, Context) ->
                     }
             end,
             InvoiceNr = invoice_nr(Payment, Context),
+            Excl = z_string:trim( z_convert:to_binary( m_config:get_value(mod_payment_buckaroo, services_excluded, Context) ) ),
+            Sel = z_string:trim( z_convert:to_binary( m_config:get_value(mod_payment_buckaroo, services_selectable, Context) ) ),
             Args1 = Args#{
                 <<"Currency">> => Currency,
                 <<"Description">> => valid_description( proplists:get_value(description, Payment) ),
@@ -127,6 +130,8 @@ create(PaymentId, Context) ->
                     <<"ServiceList">> => [
                     ]
                 },
+                <<"ServicesExcludedForClient">> => Excl,
+                <<"ServicesSelectableByClient">> => Sel,
                 <<"CustomParameters">> => [
                     #{
                         <<"Name">> => <<"PaymentNr">>,
