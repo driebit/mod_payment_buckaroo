@@ -119,14 +119,29 @@ moved_temporarily(ReqData, Context) ->
     end.
 
 set_status(PspId, StatusCode, Timestamp, Context) ->
-    DateTime = z_datetime:to_datetime(Timestamp, <<"Europe/Berlin">>),
     case m_payment:get_by_psp(mod_payment_buckaroo, PspId, Context) of
         {ok, Payment} ->
             Id = proplists:get_value(id, Payment),
+            % The posted timestamp seems to be in the local time of Buckaroo?
+            % As this timestamp is unsure we have to assume it should be in the
+            % range [-10min ... -10sec], as it is a semi-real-time event.
+            % We err on the safe side of being a bit too early so that future events
+            % are accepted as being after this event.
+            Now = calendar:universal_time(),
+            Now_10m = prev_min(10, Now),
+            Now_10s = prev_sec(10, Now),
+            TimestampDT = z_datetime:to_datetime(Timestamp, <<"Europe/Berlin">>),
+            DateTime = erlang:max(Now_10m, erlang:min(Now_10s, TimestampDT)),
             m_payment_buckaroo_api:update_payment_status(Id, StatusCode, DateTime, Context);
         {error, _} = Error ->
             Error
     end.
+
+prev_min(0, DT) -> DT;
+prev_min(N, DT) when N > 0 -> prev_min(N-1, z_datetime:prev_minute(DT)).
+
+prev_sec(0, DT) -> DT;
+prev_sec(N, DT) when N > 0 -> prev_min(N-1, z_datetime:prev_second(DT)).
 
 redirect(Dispatch, Context) ->
     Args = [
