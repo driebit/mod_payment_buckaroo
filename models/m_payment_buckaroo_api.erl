@@ -58,7 +58,7 @@ test(Context) ->
         language = z_context:language(Context),
         description_html = <<"Test">>,
         is_qargs = false,
-        recurring = false,
+        is_recurring_start = false,
         extra_props = [
             {email, <<"marc@worrell.nl">>},
             {name_surname, <<"Pietersen">>}
@@ -139,7 +139,7 @@ create(PaymentId, Context) ->
                     }
                 ]
             },
-            Args2 = case proplists:get_value(recurring, Payment) of
+            Args2 = case proplists:get_value(is_recurring_start, Payment) of
                 true ->
                     Args1#{
                         <<"StartRecurrent">> => true
@@ -163,7 +163,7 @@ create(PaymentId, Context) ->
                         [
                             {psp_module, mod_payment_buckaroo},
                             {psp_external_log_id, BuckarooKey},
-                            {description, <<"Created Mollie payment ", BuckarooKey/binary>>},
+                            {description, <<"Created Buckaroo payment ", BuckarooKey/binary>>},
                             {request_result, JSON}
                         ],
                         Context),
@@ -380,10 +380,10 @@ webhook_data(#{ <<"Transaction">> := #{ <<"Key">> := ExtId } = JSON }, Context) 
                     {error, no_status_code}
             end;
         {error, notfound} ->
-            lager:error("Payment PSP Mollie webhook call with unknown id ~p", [ExtId]),
+            lager:error("Payment PSP Buckaroo webhook call with unknown id ~p", [ExtId]),
             {error, notfound};
         {error, _} = Error ->
-            lager:error("Payment PSP Mollie webhook call with id ~p, fetching payment error: ~p", [ExtId, Error]),
+            lager:error("Payment PSP Buckaroo webhook call with id ~p, fetching payment error: ~p", [ExtId, Error]),
             Error
     end;
 webhook_data(JSON, _Context) ->
@@ -498,7 +498,7 @@ software() ->
             <<"PlatformName">> => <<"Zotonic">>,
             <<"PlatformVersion">> => z_convert:to_binary(?ZOTONIC_VERSION),
             <<"ModuleSupplier">> => <<"Driebit">>,
-            <<"ModuleName">> => <<"mod_payment_mollie">>,
+            <<"ModuleName">> => <<"mod_payment_buckaroo">>,
             <<"ModuleVersion">> => <<>>
         })
     ).
