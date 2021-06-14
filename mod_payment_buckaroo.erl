@@ -31,7 +31,6 @@
     observe_payment_psp_request/2,
     observe_payment_psp_view_url/2,
     observe_payment_psp_status_sync/2
-    % observe_cancel_subscription_psp_request/2
 ]).
 
 -include_lib("mod_payment/include/payment.hrl").
@@ -85,6 +84,3 @@ observe_payment_psp_status_sync(#payment_psp_status_sync{
     end;
 observe_payment_psp_status_sync(#payment_psp_status_sync{}, _Context) ->
     undefined.
-
-% observe_cancel_subscription_psp_request(#cancel_subscription_psp_request{ user_id = UserId }, Context) ->
-%     m_payment_buckaroo_api:cancel_subscription(UserId, Context).
