@@ -51,6 +51,26 @@ Note that the webhook must be accessible on one of the following ports: 22; 44; 
 8787; 8880; 8888. As Buckaroo does not support any other ports. The protocol can be
 http: or https: (no self-signed certs).
 
+Mapping Buckaroo codes to mod_payment status
+--------------------------------------------
+
+The following mapping of Buckaroo codes (https://support.buckaroo.nl/categorieën/transacties/status) is made:
+
+ * 190: `paid`
+ * 490: `failed`
+ * 491: `failed`
+ * 492: `failed`
+ * 690: `canceled`
+ * 790: `pending`
+ * 791: `pending`
+ * 792: `pending`
+ * 793: `pending`
+ * 890: `canceled`
+ * 891: `canceled`
+
+All other codes are ignored and logged with an error.
+
+
 Development configuration
 -------------------------
 
@@ -65,4 +85,5 @@ If the config key `mod_payment_buckaroo.is_live` is not set then the buckaroo te
 will be used and the following bank and credit cards can be used for testing:
 
 https://support.buckaroo.nl/categorieën/integratie/test-gegevens
+
 
