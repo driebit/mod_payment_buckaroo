@@ -51,6 +51,14 @@ Note that the webhook must be accessible on one of the following ports: 22; 44; 
 8787; 8880; 8888. As Buckaroo does not support any other ports. The protocol can be
 http: or https: (no self-signed certs).
 
+For the webhook to function correctly the *push content type* must be set to `json`.
+This can be done at Buckaroo:
+
+    Mijn Buckaroo > Websites > Push instellingen
+
+Find the field `Selecteer push contenttype`, and select `json`.
+
+
 Mapping Buckaroo codes to mod_payment status
 --------------------------------------------
 
